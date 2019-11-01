@@ -10,15 +10,15 @@ import UIKit
 import PickerView
 
 class ExamplePickerViewController: UIViewController {
-
+    
     // MARK: - Nested Types
-
+    
     enum PresentationType {
         case numbers(Int, Int), names(Int, Int) // NOTE: (Int, Int) represent the rawValue's of PickerView style enums.
     }
-
+    
     // MARK: - Properties
-
+    
     @IBOutlet weak var examplePicker: PickerView!
     
     let numbers: [String] = {
@@ -27,15 +27,15 @@ class ExamplePickerViewController: UIViewController {
         for index in 1...10 {
             numbers.append(String(index))
         }
-
+        
         return numbers
     }()
-
+    
     let osxNames = ["Cheetah", "Puma", "Jaguar", "Panther", "Tiger", "Leopard", "Snow Leopard", "Lion", "Montain Lion",
                     "Mavericks", "Yosemite", "El Capitan"]
     
     var presentationType = PresentationType.numbers(0, 0)
-    
+    var currentIndex: Int = 0
     var currentSelectedValue: String?
     var updateSelectedValue: ((_ newSelectedValue: String) -> Void)?
     
@@ -95,6 +95,7 @@ class ExamplePickerViewController: UIViewController {
         if selectionStyle == .image {
             examplePicker.selectionImageView.image = UIImage(named: "SelectionImage")!
         }
+        examplePicker.selectRow(0, animated: false)
     }
     
     // MARK: Actions
@@ -143,7 +144,19 @@ extension ExamplePickerViewController: PickerViewDelegate {
     func pickerViewHeightForRows(_ pickerView: PickerView) -> CGFloat {
         return 50.0
     }
-
+    
+    func pickerView(_ pickerView: PickerView, didScrollRow row: Int) {
+        if currentIndex != row {
+            currentIndex = row
+            switch presentationType {
+            case .numbers(_, _):
+                debugPrint("Scroll: \(numbers[currentIndex])")
+            case .names(_, _):
+                debugPrint("Scroll: \(osxNames[currentIndex])")
+            }
+        }
+    }
+    
     func pickerView(_ pickerView: PickerView, didSelectRow row: Int) {
         switch presentationType {
         case .numbers(_, _):
@@ -151,7 +164,18 @@ extension ExamplePickerViewController: PickerViewDelegate {
         case .names(_, _):
             currentSelectedValue = osxNames[row]
         }
-
+        
+        print(currentSelectedValue ?? "")
+    }
+    
+    func pickerView(_ pickerView: PickerView, didTapRow row: Int) {
+        switch presentationType {
+        case .numbers(_, _):
+            currentSelectedValue = numbers[row]
+        case .names(_, _):
+            currentSelectedValue = osxNames[row]
+        }
+        
         print(currentSelectedValue ?? "")
     }
     

@@ -34,7 +34,7 @@ import UIKit
 @objc public protocol PickerViewDelegate: class {
     func pickerViewHeightForRows(_ pickerView: PickerView) -> CGFloat
     @objc optional func pickerView(_ pickerView: PickerView, didSelectRow row: Int)
-    @objc optional func pickerView(_ pickerView: PickerView, didTapRow row: Int)
+    @objc optional func pickerView(_ pickerView: PickerView, didScrollRow row: Int)
     @objc optional func pickerView(_ pickerView: PickerView, styleForLabel label: UILabel, highlighted: Bool)
     @objc optional func pickerView(_ pickerView: PickerView, viewForRow row: Int, highlighted: Bool, reusingView view: UIView?) -> UIView?
 }
@@ -463,19 +463,9 @@ open class PickerView: UIView {
 
         let indexOfSelectedRow = visibleIndexOfSelectedRow()
         tableView.setContentOffset(CGPoint(x: 0.0, y: CGFloat(indexOfSelectedRow) * rowHeight), animated: false)
-
-        delegate?.pickerView?(self, didSelectRow: currentSelectedRow)
+        // KenK11
+//        delegate?.pickerView?(self, didSelectRow: currentSelectedRow)
         shouldSelectNearbyToMiddleRow = false
-    }
-    
-    /**
-        Selects literally the row with index that the user tapped.
-    
-        - parameter row: The row index that the user tapped, i.e. the Data Source index times the `infinityRowsMultiplier`.
-    */
-    fileprivate func selectTappedRow(_ row: Int) {
-        delegate?.pickerView?(self, didTapRow: indexForRow(row))
-        selectRow(row, animated: true)
     }
 
     fileprivate func turnPickerViewOn() {
@@ -525,9 +515,11 @@ open class PickerView: UIView {
         
         currentSelectedRow = finalRow
         
-        delegate?.pickerView?(self, didSelectRow: indexForRow(currentSelectedRow))
-        
         tableView.setContentOffset(CGPoint(x: 0.0, y: CGFloat(currentSelectedRow) * rowHeight), animated: animated)
+        
+        if !animated {
+            delegate?.pickerView?(self, didSelectRow: indexForRow(currentSelectedRow))
+        }
     }
     
     open func reloadPickerView() {
@@ -606,7 +598,7 @@ extension PickerView: UITableViewDelegate {
     // MARK: UITableViewDelegate
     
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        selectTappedRow((indexPath as NSIndexPath).row)
+        selectRow(indexPath.row, animated: true)
     }
     
     public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -615,7 +607,7 @@ extension PickerView: UITableViewDelegate {
         // When the scrolling reach the end on top/bottom we need to set the first/last row to appear in the center of PickerView, so that row must be bigger.
         if (indexPath as NSIndexPath).row == 0 {
             return (frame.height / 2) + (rowHeight / 2)
-        } else if numberOfRowsInPickerView > 0 && (indexPath as NSIndexPath).row == numberOfRowsInPickerView - 1 {
+        } else if numberOfRowsInPickerView > 0 && indexPath.row == numberOfRowsInPickerView - 1 {
             return (frame.height / 2) + (rowHeight / 2)
         }
 
@@ -658,6 +650,12 @@ extension PickerView: UIScrollViewDelegate {
         isScrolling = false
     }
     
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        let partialRow = Float(scrollView.contentOffset.y / rowHeight)
+        let roundedRow = Int(lroundf(partialRow))
+        delegate?.pickerView?(self, didSelectRow: roundedRow)
+    }
+    
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let partialRow = Float(scrollView.contentOffset.y / rowHeight)
         let roundedRow = Int(lroundf(partialRow))
@@ -676,6 +674,7 @@ extension PickerView: UIScrollViewDelegate {
         if let cellToHighlight = tableView.cellForRow(at: IndexPath(row: roundedRow, section: 0)) as? SimplePickerTableViewCell {
             let _ = delegate?.pickerView?(self, viewForRow: indexForRow(roundedRow), highlighted: true, reusingView: cellToHighlight.customView)
             let _ = delegate?.pickerView?(self, styleForLabel: cellToHighlight.titleLabel, highlighted: true)
+            delegate?.pickerView?(self, didScrollRow: roundedRow)
         }
     }
     

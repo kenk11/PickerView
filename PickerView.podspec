@@ -27,6 +27,7 @@ s.license          = 'MIT'
 s.author           = { "Filipe Alvarenga" => "ofilipealvarenga@gmail.com" }
 s.source           = { :git => "https://github.com/filipealva/PickerView.git", :tag => s.version.to_s }
 # s.social_media_url = 'https://facebook.com/filipealva'
+s.swift_version = '5.0'
 
 s.platform     = :ios, '8.0'
 s.requires_arc = true
